@@ -2,6 +2,7 @@ package jp.techacademy.ami.okabe.qa_app2
 
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.design.widget.FloatingActionButton
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
@@ -9,6 +10,7 @@ import android.view.View
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_question_detail.*
+import kotlinx.android.synthetic.main.activity_question_send.*
 
 class QuestionDetailActivity: AppCompatActivity(){
 
@@ -17,6 +19,7 @@ class QuestionDetailActivity: AppCompatActivity(){
     private lateinit var mAdapter: QuestionDetailListAdapter
     private lateinit var mAnswerRef: DatabaseReference
     private lateinit var mDataBaseReference: DatabaseReference
+    private lateinit var mQuestionArrayList: ArrayList<Question>
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
@@ -91,16 +94,42 @@ class QuestionDetailActivity: AppCompatActivity(){
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             //fabfavボタンを非表示にする
+            val fabnotfav = findViewById<FloatingActionButton>(R.id.fabnotfav)
+            fabnotfav.hide()
+
             val fabfav = findViewById<FloatingActionButton>(R.id.fabfav)
             fabfav.hide()
         } else {
-            fabfav.show()
-            fabfav.setOnClickListener {
-                val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.genre.toString())
-                    .child(mQuestion.questionUid)
+            //favouritesに登録済みならfabfavを、登録済みでなければfabnotfavを表示する
+            fabnotfav.show()
+            fabfav.hide()
 
-                favRef.push().setValue(this)
-            }
+            isFavourite()
+
+        }
+    }
+
+    private fun isFavourite() {
+        fabnotfav.setOnClickListener {
+            val user = FirebaseAuth.getInstance().currentUser
+            val dataBaseReference = FirebaseDatabase.getInstance().reference
+            val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.genre.toString())
+                .child(mQuestion.questionUid)
+
+            Map<String, String> userMap = new ObjectMapper().convertValue(user, Map.class)
+            val data = userMap<String, String>()
+
+            val title = mQuestion.title
+            val body = mQuestion.body
+            val sp = PreferenceManager.getDefaultSharedPreferences(this)
+            val name = sp.getString(NameKEY, "")
+
+            data["uid"] = FirebaseAuth.getInstance().currentUser!!.uid
+            data["title"] = title
+            data["body"] = body
+            data["name"] = name
+
+            favRef.updateChildren(data)
         }
     }
 }
