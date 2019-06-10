@@ -7,6 +7,7 @@ import android.support.design.widget.FloatingActionButton
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_question_detail.*
@@ -93,43 +94,58 @@ class QuestionDetailActivity: AppCompatActivity(){
 
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
-            //fabfavボタンを非表示にする
             val fabnotfav = findViewById<FloatingActionButton>(R.id.fabnotfav)
             fabnotfav.hide()
 
             val fabfav = findViewById<FloatingActionButton>(R.id.fabfav)
             fabfav.hide()
         } else {
-            //favouritesに登録済みならfabfavを、登録済みでなければfabnotfavを表示する
-            fabnotfav.show()
-            fabfav.hide()
+            if (isFavourite() == 0) {
+                //お気に入り登録を解除する
+                fabfav.setOnClickListener{
 
-            isFavourite()
+                }
+            } else if (isFavourite() == 1) {
+                //お気に入り登録する
+                fabnotfav.setOnClickListener {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    val dataBaseReference = FirebaseDatabase.getInstance().reference
+                    val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.genre.toString())
+                        .child(mQuestion.questionUid)
 
+                    val userMap = ObjectMapper().convertValue(user, Map::class.java)
+                    val data = userMap<String, String>()
+
+                    val title = mQuestion.title
+                    val body = mQuestion.body
+                    val sp = PreferenceManager.getDefaultSharedPreferences(this)
+                    val name = sp.getString(NameKEY, "")
+
+                    data["uid"] = FirebaseAuth.getInstance().currentUser!!.uid
+                    data["title"] = title
+                    data["body"] = body
+                    data["name"] = name
+
+                    favRef.updateChildren(data)
+                }
+            }
         }
     }
 
-    private fun isFavourite() {
-        fabnotfav.setOnClickListener {
-            val user = FirebaseAuth.getInstance().currentUser
-            val dataBaseReference = FirebaseDatabase.getInstance().reference
-            val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.genre.toString())
-                .child(mQuestion.questionUid)
+    //お気に入りに登録されているか調べ、ボタンの表示を変更する
+    private fun isFavourite(): Int {
+        val questionUid = mQuestion.questionUid
 
-            Map<String, String> userMap = new ObjectMapper().convertValue(user, Map.class)
-            val data = userMap<String, String>()
-
-            val title = mQuestion.title
-            val body = mQuestion.body
-            val sp = PreferenceManager.getDefaultSharedPreferences(this)
-            val name = sp.getString(NameKEY, "")
-
-            data["uid"] = FirebaseAuth.getInstance().currentUser!!.uid
-            data["title"] = title
-            data["body"] = body
-            data["name"] = name
-
-            favRef.updateChildren(data)
+        for (questionUid in mQuestionArrayList) {
+            if (dataSnapshot.key.equals(questionUid)) {
+                fabfav.show()
+                fabnotfav.hide()
+                return 0
+            } else {
+                fabfav.hide()
+                fabnotfav.show()
+                return 1
+            }
         }
     }
 }
