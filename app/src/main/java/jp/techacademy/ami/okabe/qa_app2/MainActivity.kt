@@ -202,17 +202,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             mGenre = 4
         }
 
-        drawerFav.setOnClickListener { v ->
-            mToolbar.title = "お気に入り"
-            val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-            drawer.closeDrawer(GravityCompat.START)
-
-            mQuestionArrayList.clear()
-            mAdapter.setQuestionArrayList(mQuestionArrayList)
-            mListView.adapter = mAdapter
-            //このへんにfavouritesのリストを入れて表示できるようにする？
-        }
-
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)
 
@@ -226,6 +215,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         mGenreRef = mDatabaseReference.child(ContentsPATH).child(mGenre.toString())
         mGenreRef!!.addChildEventListener(mEventListener)
+
+        drawerFav.setOnClickListener { v ->
+            mToolbar.title = "お気に入り"
+
+            val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
+            drawer.closeDrawer(GravityCompat.START)
+
+            mQuestionArrayList.clear()
+            mAdapter.setQuestionArrayList(mQuestionArrayList)
+            mListView.adapter = mAdapter
+                //このへんにfavouritesのリストを入れて表示できるようにする？
+
+        }
 
         return true
     }
