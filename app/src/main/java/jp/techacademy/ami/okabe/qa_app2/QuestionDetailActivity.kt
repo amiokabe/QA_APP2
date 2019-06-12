@@ -17,13 +17,9 @@ import java.util.*
 
 class QuestionDetailActivity: AppCompatActivity() {
 
-    private lateinit var mAuth: FirebaseAuth
     private lateinit var mQuestion: Question
     private lateinit var mAdapter: QuestionDetailListAdapter
     private lateinit var mAnswerRef: DatabaseReference
-    private lateinit var mDataBaseReference: DatabaseReference
-    private lateinit var mQuestionArrayList: ArrayList<Question>
-    private var mGenre: Int = 0
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
@@ -69,7 +65,6 @@ class QuestionDetailActivity: AppCompatActivity() {
 
         val extras = intent.extras
         mQuestion = extras.get("question") as Question
-        mGenre = extras.getInt("genre")
 
         title = mQuestion.title
 
@@ -105,59 +100,57 @@ class QuestionDetailActivity: AppCompatActivity() {
             val fabfav = findViewById<FloatingActionButton>(R.id.fabfav)
             fabfav.hide()
         } else {
-            val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.questionUid)
+            fabnotfav.show()
+            fabfav.hide()
 
-            favRef!!.addChildEventListener(childEventListener)
+            fabnotfav.setOnClickListener { v ->
+                Snackbar.make(v, "お気に入りに登録しました", Snackbar.LENGTH_LONG).show()
 
-            if (favRef == null) {
+                val data = HashMap<String, String>()
+
+                data["genre"] = mQuestion.genre.toString()
+                data["questionUid"] = mQuestion.questionUid.toString()
+
+                favRef.setValue(data)
+
+                fabnotfav.hide()
+                fabfav.show()
+            }
+
+            fabfav.setOnClickListener { v ->
+                Snackbar.make(v, "お気に入りから削除しました", Snackbar.LENGTH_LONG).show()
+
+                favRef.removeValue()
+
                 fabnotfav.show()
                 fabfav.hide()
-
-                //お気に入り登録する
-                fabnotfav.setOnClickListener { v ->
-                    Snackbar.make(v, "お気に入りに登録しました", Snackbar.LENGTH_LONG).show()
-
-                    val data = HashMap<String, String>()
-
-                    data["genre"] = mGenre.toString()
-                    data["questionUid"] = mQuestion.questionUid.toString()
-
-                    favRef.setValue(data)
-                }
-            } else {
-                fabfav.show()
-                fabnotfav.hide()
-
-                //お気に入り登録を解除する
-                fabfav.setOnClickListener{ v ->
-                    Snackbar.make(v, "お気に入りから削除しました", Snackbar.LENGTH_LONG).show()
-
-
-
-                }
             }
+
+            val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.questionUid)
+            favRef!!.addChildEventListener(object : ChildEventListener {
+                override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
+                    fabnotfav.hide()
+                    fabfav.show()
+                }
+
+                override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
+
+                }
+
+                override fun onChildRemoved(dataSnapshot: DataSnapshot) {
+
+
+                }
+
+                override fun onChildMoved(p0: DataSnapshot, p1: String?) {
+
+                }
+
+                override fun onCancelled(p0: DatabaseError) {
+
+                }
+            })
         }
     }
 
-    private val childEventListener = object : ChildEventListener {
-        override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
-
-        }
-
-        override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
-
-        }
-
-        override fun onChildRemoved(dataSnapshot: DataSnapshot) {
-
-        }
-
-        override fun onChildMoved(p0: DataSnapshot, p1: String?) {
-
-        }
-
-        override fun onCancelled(p0: DatabaseError) {
-
-        }
-    }
 }
