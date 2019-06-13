@@ -86,5 +86,4 @@ class QuestionDetailListAdapter(context: Context, private val mQuestion: Questio
 
         return convertView
     }
-
 }

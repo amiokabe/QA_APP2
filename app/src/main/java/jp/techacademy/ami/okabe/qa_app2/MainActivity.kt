@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private lateinit var mToolbar: Toolbar
     private var mGenre = 0
+    private lateinit var mAuth: FirebaseAuth
 
     private lateinit var mDatabaseReference: DatabaseReference
     private lateinit var mListView: ListView
@@ -186,6 +187,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+
         val id = item.itemId
 
         if (id == R.id.nav_hobby) {
@@ -200,6 +202,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         } else if (id == R.id.nav_computer) {
             mToolbar.title = "コンピューター"
             mGenre = 4
+        } else if (id == R.id.nav_favourite) {
+            val intent = Intent(applicationContext, FavouriteActivity::class.java)
+            startActivity(intent)
         }
 
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
@@ -215,19 +220,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         mGenreRef = mDatabaseReference.child(ContentsPATH).child(mGenre.toString())
         mGenreRef!!.addChildEventListener(mEventListener)
-
-        drawerFav.setOnClickListener { v ->
-            mToolbar.title = "お気に入り"
-
-            val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-            drawer.closeDrawer(GravityCompat.START)
-
-            mQuestionArrayList.clear()
-            mAdapter.setQuestionArrayList(mQuestionArrayList)
-            mListView.adapter = mAdapter
-                //このへんにfavouritesのリストを入れて表示できるようにする？
-
-        }
 
         return true
     }

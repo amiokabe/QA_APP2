@@ -92,7 +92,7 @@ class QuestionDetailActivity: AppCompatActivity() {
         mAnswerRef.addChildEventListener(mEventListener)
 
         val user = FirebaseAuth.getInstance().currentUser
-        val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.questionUid)
+
         if (user == null) {
             val fabnotfav = findViewById<FloatingActionButton>(R.id.fabnotfav)
             fabnotfav.hide()
@@ -102,6 +102,8 @@ class QuestionDetailActivity: AppCompatActivity() {
         } else {
             fabnotfav.show()
             fabfav.hide()
+
+            val favRef = dataBaseReference.child(FavouritesPATH).child(user.uid).child(mQuestion.questionUid)
 
             fabnotfav.setOnClickListener { v ->
                 Snackbar.make(v, "お気に入りに登録しました", Snackbar.LENGTH_LONG).show()
@@ -126,7 +128,7 @@ class QuestionDetailActivity: AppCompatActivity() {
                 fabfav.hide()
             }
 
-            val favRef = dataBaseReference.child(FavouritesPATH).child(user!!.uid).child(mQuestion.questionUid)
+
             favRef!!.addChildEventListener(object : ChildEventListener {
                 override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
                     fabnotfav.hide()
@@ -152,5 +154,4 @@ class QuestionDetailActivity: AppCompatActivity() {
             })
         }
     }
-
 }
