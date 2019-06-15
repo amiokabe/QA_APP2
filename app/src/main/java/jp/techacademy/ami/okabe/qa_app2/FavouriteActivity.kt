@@ -9,6 +9,7 @@ import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.util.Base64
 import android.view.Menu
@@ -22,6 +23,7 @@ import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_question_detail.*
+import kotlinx.android.synthetic.main.app_bar_main.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -36,52 +38,36 @@ class FavouriteActivity: AppCompatActivity(), NavigationView.OnNavigationItemSel
     private lateinit var mQuestionArrayList: ArrayList<Question>
     private lateinit var mAdapter: QuestionsListAdapter
 
-    private var mGenreRef: DatabaseReference? = null
     private var mFavRef: DatabaseReference? = null
 
     private val mEventListener = object : ChildEventListener {
         override fun onChildAdded(dataSnapshot: DataSnapshot, s:String?) {
-            val map = dataSnapshot.value as Map<String, String>
-            val title = map["title"] ?: ""
-            val body = map["body"] ?: ""
-            val name = map["name"] ?: ""
-            val uid = map["uid"] ?: ""
-            val imageString = map["image"] ?: ""
-            val bytes =
-                if (imageString.isNotEmpty()) {
-                    Base64.decode(imageString, Base64.DEFAULT)
-                } else {
-                    byteArrayOf()
-                }
+            mQuestionArrayList.clear()
+            mAdapter.setQuestionArrayList(mQuestionArrayList)
+            mListView.adapter = mAdapter
 
-            val answerArrayList = ArrayList<Answer>()
-            val answerMap = map["answers"] as Map<String, String>?
-            if (answerMap != null) {
-                for (key in answerMap.keys) {
-                    val temp = answerMap[key] as Map<String, String>
-                    val answerBody = temp["body"] ?: ""
-                    val answerName = temp["name"] ?: ""
-                    val answerUid = temp["uid"] ?: ""
-                    val answer = Answer(answerBody, answerName, answerUid, key)
-                    answerArrayList.add(answer)
-                }
-            }
+            val snapshot = dataSnapshot.value as HashMap<String, String>
+            mGenre = snapshot["genre"]!!.toInt()
+            val favquid = snapshot["questionUid"]
 
-            val question = Question(
-                title, body, name, uid, dataSnapshot.key ?: "",
-                mGenre, bytes, answerArrayList
-            )
-            mQuestionArrayList.add(question)
-            mAdapter.notifyDataSetChanged()
+            val questionRef = mDatabaseReference.child(ContentsPATH).child(mGenre.toString()).child(favquid.toString())
 
-        }
+            questionRef.addValueEventListener(object: ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    val map = dataSnapshot.value as Map<String, String>
+                    val title = map["title"] ?: ""
+                    val body = map["body"] ?: ""
+                    val name = map["name"] ?: ""
+                    val uid = map["uid"] ?: ""
+                    val imageString = map["image"] ?: ""
+                    val bytes =
+                        if (imageString.isNotEmpty()) {
+                            Base64.decode(imageString, Base64.DEFAULT)
+                        } else {
+                            byteArrayOf()
+                        }
 
-        override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
-            val map = dataSnapshot.value as Map<String, String>
-
-            for (question in mQuestionArrayList) {
-                if (dataSnapshot.key.equals(question.questionUid)) {
-                    question.answers.clear()
+                    val answerArrayList = ArrayList<Answer>()
                     val answerMap = map["answers"] as Map<String, String>?
                     if (answerMap != null) {
                         for (key in answerMap.keys) {
@@ -90,18 +76,32 @@ class FavouriteActivity: AppCompatActivity(), NavigationView.OnNavigationItemSel
                             val answerName = temp["name"] ?: ""
                             val answerUid = temp["uid"] ?: ""
                             val answer = Answer(answerBody, answerName, answerUid, key)
-                            question.answers.add(answer)
+                            answerArrayList.add(answer)
                         }
                     }
 
+                    val question = Question(
+                        title, body, name, uid, dataSnapshot.key ?: "",
+                        mGenre, bytes, answerArrayList
+                    )
+                    mQuestionArrayList.add(question)
                     mAdapter.notifyDataSetChanged()
                 }
-            }
+
+                override fun onCancelled(p0: DatabaseError) {
+
+                }
+            })
+        }
+
+        override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
 
         }
 
         override fun onChildRemoved(p0: DataSnapshot) {
-
+            mQuestionArrayList.clear()
+            mAdapter.setQuestionArrayList(mQuestionArrayList)
+            mListView.adapter = mAdapter
         }
 
         override fun onChildMoved(p0: DataSnapshot, p1: String?) {
@@ -115,23 +115,11 @@ class FavouriteActivity: AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_favourite)
         mToolbar = findViewById(R.id.toolbar)
         mToolbar.title = "お気に入り"
+        setSupportActionBar(mToolbar)
 
-        //これが動かない
-        //setSupportActionBar(mToolbar)
-
-        val fab = findViewById<FloatingActionButton>(R.id.fab)
-        fab.hide()
-
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-        val toggle = ActionBarDrawerToggle(this, drawer, mToolbar, R.string.app_name, R.string.app_name)
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
-
-        val navigationView = findViewById<NavigationView>(R.id.nav_view)
-        navigationView.setNavigationItemSelectedListener(this)
 
         mDatabaseReference = FirebaseDatabase.getInstance().reference
 
@@ -140,25 +128,20 @@ class FavouriteActivity: AppCompatActivity(), NavigationView.OnNavigationItemSel
         mQuestionArrayList = ArrayList<Question>()
         mAdapter.notifyDataSetChanged()
 
-        val user = FirebaseAuth.getInstance().currentUser
-
-        mFavRef = mDatabaseReference.child(FavouritesPATH).child(user!!.uid)
-        mFavRef!!.addValueEventListener(object: ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-
-
-
-            }
-
-            override fun onCancelled(p0: DatabaseError) {
-
-            }
-        })
+        mListView.setOnItemClickListener{ parent, view, position, id ->
+            val intent = Intent(applicationContext, QuestionDetailActivity::class.java)
+            intent.putExtra("question", mQuestionArrayList[position])
+            startActivity(intent)
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        val navigationView = findViewById<NavigationView>(R.id.nav_view)
+
+        val user = FirebaseAuth.getInstance().currentUser
+
+        mFavRef = mDatabaseReference.child(FavouritesPATH).child(user!!.uid)
+        mFavRef!!.addChildEventListener(mEventListener)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -179,40 +162,6 @@ class FavouriteActivity: AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-
-        val id = item.itemId
-
-        if (id == R.id.nav_hobby) {
-            mToolbar.title = "趣味"
-            mGenre = 1
-        } else if (id == R.id.nav_life) {
-            mToolbar.title = "生活"
-            mGenre = 2
-        } else if (id == R.id.nav_health) {
-            mToolbar.title = "健康"
-            mGenre = 3
-        } else if (id == R.id.nav_computer) {
-            mToolbar.title = "コンピューター"
-            mGenre = 4
-        } else if (id == R.id.nav_favourite) {
-            val intent = Intent(applicationContext, FavouriteActivity::class.java)
-            startActivity(intent)
-        }
-
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-        drawer.closeDrawer(GravityCompat.START)
-
-        mQuestionArrayList.clear()
-        mAdapter.setQuestionArrayList(mQuestionArrayList)
-        mListView.adapter = mAdapter
-
-        if (mGenreRef != null) {
-            mGenreRef!!.removeEventListener(mEventListener)
-        }
-
-        mGenreRef = mDatabaseReference.child(ContentsPATH).child(mGenre.toString())
-        mGenreRef!!.addChildEventListener(mEventListener)
-
         return true
     }
 }

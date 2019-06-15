@@ -166,6 +166,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if(mGenre == 0) {
             onNavigationItemSelected(navigationView.menu.getItem(0))
         }
+
+        val user = FirebaseAuth.getInstance().currentUser
+        val menu = navigationView.getMenu()
+        val navFavourite = menu.findItem(R.id.nav_favourite)
+
+        if (user == null) {
+            navFavourite.setVisible(false)
+        } else {
+            navFavourite.setVisible(true)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

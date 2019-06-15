@@ -91,21 +91,25 @@ class QuestionDetailActivity: AppCompatActivity() {
                 .child(AnswersPATH)
         mAnswerRef.addChildEventListener(mEventListener)
 
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val dataBaseReference = FirebaseDatabase.getInstance().reference
         val user = FirebaseAuth.getInstance().currentUser
 
         if (user == null) {
-            val fabnotfav = findViewById<FloatingActionButton>(R.id.fabnotfav)
-            fabnotfav.hide()
-
             val fabfav = findViewById<FloatingActionButton>(R.id.fabfav)
             fabfav.hide()
         } else {
-            fabnotfav.show()
-            fabfav.hide()
+            fabfav.setImageResource(R.drawable.ic_star_white_24dp)
+            fabfav.show()
 
             val favRef = dataBaseReference.child(FavouritesPATH).child(user.uid).child(mQuestion.questionUid)
 
-            fabnotfav.setOnClickListener { v ->
+            fabfav.setOnClickListener { v ->
                 Snackbar.make(v, "お気に入りに登録しました", Snackbar.LENGTH_LONG).show()
 
                 val data = HashMap<String, String>()
@@ -115,24 +119,20 @@ class QuestionDetailActivity: AppCompatActivity() {
 
                 favRef.setValue(data)
 
-                fabnotfav.hide()
+                fabfav.setImageResource(R.drawable.ic_star_yellow_24dp)
                 fabfav.show()
             }
 
-            fabfav.setOnClickListener { v ->
-                Snackbar.make(v, "お気に入りから削除しました", Snackbar.LENGTH_LONG).show()
-
-                favRef.removeValue()
-
-                fabnotfav.show()
-                fabfav.hide()
-            }
-
-
             favRef!!.addChildEventListener(object : ChildEventListener {
                 override fun onChildAdded(dataSnapshot: DataSnapshot, s: String?) {
-                    fabnotfav.hide()
+                    fabfav.setImageResource(R.drawable.ic_star_yellow_24dp)
                     fabfav.show()
+
+                    fabfav.setOnClickListener { v ->
+                        Snackbar.make(v, "お気に入りから削除しました", Snackbar.LENGTH_LONG).show()
+
+                        favRef.removeValue()
+                    }
                 }
 
                 override fun onChildChanged(dataSnapshot: DataSnapshot, s: String?) {
@@ -140,8 +140,22 @@ class QuestionDetailActivity: AppCompatActivity() {
                 }
 
                 override fun onChildRemoved(dataSnapshot: DataSnapshot) {
+                    fabfav.setImageResource(R.drawable.ic_star_white_24dp)
+                    fabfav.show()
 
+                    fabfav.setOnClickListener { v ->
+                        Snackbar.make(v, "お気に入りに登録しました", Snackbar.LENGTH_LONG).show()
 
+                        val data = HashMap<String, String>()
+
+                        data["genre"] = mQuestion.genre.toString()
+                        data["questionUid"] = mQuestion.questionUid.toString()
+
+                        favRef.setValue(data)
+
+                        fabfav.setImageResource(R.drawable.ic_star_yellow_24dp)
+                        fabfav.show()
+                    }
                 }
 
                 override fun onChildMoved(p0: DataSnapshot, p1: String?) {
@@ -153,5 +167,7 @@ class QuestionDetailActivity: AppCompatActivity() {
                 }
             })
         }
+
     }
+
 }
