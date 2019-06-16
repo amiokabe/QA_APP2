@@ -1,7 +1,9 @@
 package jp.techacademy.ami.okabe.qa_app2
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.preference.EditTextPreference
 import android.preference.PreferenceManager
 import android.support.design.widget.Snackbar
@@ -58,7 +60,6 @@ class SettingActivity: AppCompatActivity() {
             FirebaseAuth.getInstance().signOut()
             nameText.setText("")
             Snackbar.make(v, "ログアウトしました", Snackbar.LENGTH_LONG).show()
-
         }
 
     }
